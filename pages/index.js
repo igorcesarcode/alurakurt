@@ -59,11 +59,7 @@ function ProfileRelationBox(propriedades){
 }
 
 export default function Home() {
-  const [comunidades, setComunidades] = React.useState([{
-    title: 'Eu odeio acorda cedo',
-    image: 'https://via.placeholder.com/82x102.png/',
-    id: new Date().toISOString(),
-  }]);
+  const [comunidades, setComunidades] = React.useState([]);
   
 
   const usuarioAleatorio = 'igorcesarcode';
@@ -91,6 +87,31 @@ React.useEffect(function(){
     setSeguidores(responstaCompleta);
 
   })  
+
+
+  fetch('https://graphql.datocms.com/',{
+    method: 'POST',
+    headers: {
+      'Authorization': '56290e3c3130b629a12f9ac08120e6',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ "query": `query{
+      allCommunities {
+        id
+        title
+        imageUrl
+        urlCanal
+        creatorSlug
+      }
+    }` })
+  })
+  .then((response) => response.json()) // Pega o retorno do response.json() e já retorna
+  .then((respostaCompleta) => {
+    const comunidadesVindasDoDado = respostaCompleta.data.allCommunities;
+    setComunidades(comunidadesVindasDoDado);
+    console.log(comunidadesVindasDoDado);
+  })
 },[])
 
 
@@ -122,23 +143,39 @@ React.useEffect(function(){
               const dadosDoForm = new FormData(evento.target);
 
               const comunidade = {
-                id: new Date().toISOString(),
+                
                 title: dadosDoForm.get('title'),
-                image: dadosDoForm.get('image'),
+                imageUrl: dadosDoForm.get('image'),
+                creatorSlug: usuarioAleatorio,
+                urlCanal: dadosDoForm.get('urlCanal')
 
               }
 
-              const cumunidadesAtualizadas = [...comunidades, comunidade];
-              setComunidades(cumunidadesAtualizadas);
+              fetch('/api/comunidades',{
+                method:'POST',
+                headers:{
+                  'Content-Type': 'application/json'
+                },
+                body:JSON.stringify(comunidade)
+              })
+              .then(async (response)=> {
+                const dados = await response.json();
+                console.log(dados);
+                const comunidade = dados.registroCriado;
+                const cumunidadesAtualizadas = [...comunidades, comunidade];
+                setComunidades(cumunidadesAtualizadas);                
+              })
+
+
               
 
 
             }} >
             <div> 
                   <input 
-                  placeholder="Qual qual vai ser o nome da sua comunidade?" 
+                  placeholder="Qual o nome do canal?" 
                   name="title" 
-                  aria-label="Qual qual vai ser o nome da sua comunidade?" />                  
+                  aria-label="Qual o nome do canal?" />                  
                 </div>
 
                 <div>
@@ -146,8 +183,14 @@ React.useEffect(function(){
                   placeholder="Coloque uma Url para usamos de capa" 
                   name="image" 
                   aria-label="Coloque uma Url para usamos de capa" />                  
-                </div>      
+                </div>    
 
+                <div>
+                  <input 
+                  placeholder="Coloque do canal" 
+                  name="urlCanal" 
+                  aria-label="Coloque uma Url para usamos de capa" />                  
+                </div> 
                 <button>
                   Criar uma comunidade  
                 </button>          
@@ -159,13 +202,16 @@ React.useEffect(function(){
           
           
           <ProfileRelationsBoxWrapper>
+           
+           <h2 className="subTitle">Devs do Youtube ({comunidades.length}) </h2>
             {
+            
             <ul>
             {comunidades.map((itemAtual) => {
               return (
                 <li  key={itemAtual.id}>
-                  <a href={`/users/${itemAtual.title}`} key={itemAtual.id}>
-                    {<img src={itemAtual.image} />}
+                  <a href={`${itemAtual.urlCanal}`} key={itemAtual.id}>
+                    {<img src={itemAtual.imageUrl} />}
                     <span>{itemAtual.title}</span>
                   </a>
                 </li>
